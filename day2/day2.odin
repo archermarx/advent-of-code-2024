@@ -75,7 +75,7 @@ count_safe_reports::proc(contents: string, dampen:= false) -> int {
 }
 
 main::proc() {
-	contents, ok := os.read_entire_file_from_filename("input")
+	contents, ok := os.read_entire_file_from_filename("input_day2.txt")
 	input := string(contents)
 	defer delete(input)
 

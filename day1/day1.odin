@@ -77,7 +77,7 @@ day1_1::proc(filename: string) -> int {
 }
 
 main::proc() {
-	arr1, arr2, ok := readlists("input")
+	arr1, arr2, ok := readlists("input_day1.txt")
 	defer {
 		delete(arr1)
 		delete(arr2)
