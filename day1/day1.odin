@@ -24,7 +24,9 @@ readlists::proc(filename: string) -> (list1: [dynamic]int, list2: [dynamic]int, 
 
 	it := string(filecontents)
 	for line in strings.split_lines_iterator(&it) {
+		context.allocator = context.temp_allocator
 		spl := strings.fields(line)
+		defer delete(spl)
 		append(&list1, strconv.atoi(spl[0]))
 		append(&list2, strconv.atoi(spl[1]))
 	}
