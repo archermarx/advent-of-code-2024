@@ -66,7 +66,6 @@ count_safe_reports::proc(contents: string, dampen:= false) -> int {
 			dampen: for _, index in fields {
 				if classify_report(fields, remove=index) {
 					safe_reports += 1
-					fmt.println(fields, index)
 					break dampen
 				}
 			}
@@ -86,7 +85,7 @@ main::proc() {
 	}
 
 	fmt.println("Example 1: ", count_safe_reports(example), ", expected 2")
-	//fmt.println("Input 1: ", count_safe_reports(input))
+	fmt.println("Input 1: ", count_safe_reports(input))
 	fmt.println("Example 2: ", count_safe_reports(example, dampen=true), ", expected 4")
 	fmt.println("Input 2: ", count_safe_reports(input, dampen=true))
 }
