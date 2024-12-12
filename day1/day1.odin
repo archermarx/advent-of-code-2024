@@ -52,6 +52,7 @@ similarityscore::proc(list1: []int, list2: []int) -> int {
 	slice.sort(list2)
 
 	counts := make(map[int]int)
+	defer delete(counts)
 
 	for num2 in list2 {
 		if num2 in counts {
