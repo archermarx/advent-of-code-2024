@@ -124,13 +124,9 @@ process_updates::proc(input: string, reorder_invalid := false) -> int {
 
 main::proc() {
 	contents, ok := os.read_entire_file_from_filename("input_day5.txt")
-	input := string(contents)
+	if !ok do panic("could not read file!")
 	defer delete(contents)
-
-	if !ok {
-		fmt.eprintf("Could not read file!")
-		os.exit(1)
-	}
+	input := string(contents)
 
 	fmt.println("Example 1: ", process_updates(example_1), " (expected 143)")
 	fmt.println("Input 1: ", process_updates(input))
