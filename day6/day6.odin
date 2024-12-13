@@ -108,14 +108,18 @@ clear_grid::proc(grid: ^Grid) {
 	grid.guard.dir = .Up
 }
 
-print_grid::proc(grid: Grid) {
-	for _ in 0..<2*len(grid.rows[0]) + 2 {
-		fmt.print('=')
+print_grid::proc(grid: Grid, buf: ^strings.Builder) {
+	padding := 1
+
+	// Draw top border
+	fmt.sbprint(buf, '╭')
+	for _ in 1..<(padding+1)*len(grid.rows[0]) + 1 {
+		fmt.sbprint(buf, '─')
 	}
-	fmt.println()
+	fmt.sbprintln(buf, '╮')
 
 	for row, i in grid.rows {
-		fmt.print('|')
+		fmt.sbprint(buf, '│')
 		for cell, j in row {
 			c: rune
 			if i == grid.guard.pos[0] && j == grid.guard.pos[1] {
@@ -125,24 +129,31 @@ print_grid::proc(grid: Grid) {
 				case .Up: c = '^'
 				case .Down: c = 'v'
 				}
-				fmt.printf("\e[1;31m%v\e[0m", c)
+				fmt.sbprintf(buf, "\e[1;31m%v\e[0m", c)
 			} else {
 				switch(cell.state) {
-				case .Empty: fmt.printf("\e[0;30m%v\e[0m", '.')
-				case .Visited: fmt.printf("\e[1;30m%v\e[0m", 'X')
-				case .Obstacle: fmt.printf("\e[1;34m%v\e[0m", '#')
-				case .SpecialObstacle: fmt.printf("\e[1;34m%v\e[0m", 'O')
+				case .Empty: fmt.sbprint(buf, "\e[0;30m.\e[0m")
+				case .Visited: fmt.sbprint(buf, "\e[1;37mX\e[0m")
+				case .Obstacle: fmt.sbprint(buf, "\e[1;34m#\e[0m")
+				case .SpecialObstacle: fmt.sbprint(buf, "\e[1;34m0\e[0m")
 				}
 			}
-			fmt.print(' ')
+			for _ in 0..<padding do fmt.sbprint(buf, ' ')
 		}
-		fmt.println('|')
+		fmt.sbprintln(buf, '│')
 	}
 
-	for _ in 0..<2*len(grid.rows[0]) + 2 {
-		fmt.print('=')
+	// Draw bottom border
+	fmt.sbprint(buf, '╰')
+	for _ in 1..<(padding+1)*len(grid.rows[0]) + 1 {
+		fmt.sbprint(buf, '─')
 	}
-	fmt.println()
+	fmt.sbprintln(buf, '╯')
+
+	str := strings.to_string(buf^)
+	strings.builder_reset(buf)
+
+	fmt.print(str)
 }
 
 
@@ -195,15 +206,20 @@ step::proc(grid: ^Grid) -> (bool, EndState) {
 	return new, status
 }
 
-predict_route::proc(grid: ^Grid, visualize := false) -> (int, []Position, EndState) {
-	nrows, ncols := grid_dims(grid^)
-	positions: [dynamic]Position
+predict_route::proc(
+	grid: ^Grid,
+	positions: ^[dynamic]Position = nil,
+	buf: ^strings.Builder = nil,
+	visualize := false) -> (int, EndState) {
 
+	nrows, ncols := grid_dims(grid^)
+	if positions != nil do clear(positions)
 	visited := 1
 	end: EndState
+
 	for count := 0;;count += 1{
-		if (visualize) {
-			print_grid(grid^)
+		if (visualize && buf != nil) {
+			print_grid(grid^, buf)
 			fmt.printf("\e[%vA", nrows+2)
 			time.sleep(5_000_000)
 		}
@@ -211,7 +227,7 @@ predict_route::proc(grid: ^Grid, visualize := false) -> (int, []Position, EndSta
 		new, end = step(grid)
 		if new {
 			visited += 1
-			append(&positions, grid.guard.pos)
+			if positions != nil do append(positions, grid.guard.pos)
 		}
 		// detect loops with a maximum step count
 		if end != .Ok {
@@ -219,37 +235,52 @@ predict_route::proc(grid: ^Grid, visualize := false) -> (int, []Position, EndSta
 		}
 	}
 
-	if visualize do print_grid(grid^)
+	if visualize do print_grid(grid^, buf)
 
-	return visited, positions[:], end
+	return visited, end
 }
 
 count_visited::proc(input: string, visualize := false) -> int {
 	grid := create_grid(input)
-	visited, _, _ := predict_route(&grid, visualize)
+	defer delete_grid(&grid)
+
+	buf := strings.builder_make();
+	defer strings.builder_destroy(&buf)
+	visited, _ := predict_route(&grid, nil, &buf, visualize)
+
 	return visited
 }
 
 find_loops::proc(input: string, visualize := false) -> int {
 	grid := create_grid(input)
+	defer delete_grid(&grid)
+
+	buf := strings.builder_make();
+	defer strings.builder_destroy(&buf)
+
+	positions: [dynamic]Position
+	defer delete(positions)
+
 	num_rows, num_cols := grid_dims(grid)
 	num_loops := 0
 
-	_, positions, _ := predict_route(&grid)
+	predict_route(&grid, &positions, &buf)
 
-	for pos, index in positions {
+	for pos, index in positions[:] {
 		i, j := pos[0], pos[1]
 		clear_grid(&grid)
 
 		// set new obstacle and run course
 		grid.rows[i][j].state = .SpecialObstacle
-		_, _, endstate := predict_route(&grid, visualize)
+		_, endstate := predict_route(&grid, nil, &buf, visualize)
 
 		// increment loop counter if we found a loop
 		if endstate == .Loop do num_loops += 1
-		fmt.printfln("Checked position %v/%v. Found %v loops.", index+1, len(positions), num_loops)
-		if !visualize do fmt.print("\e[1A")
+		fmt.printfln("\e[1;32mChecked position %v/%v. Found %v loops.\e[0m", index+1, len(positions), num_loops)
+		fmt.print("\e[1A")
+		if visualize do fmt.printf("\e[%dA", num_rows+2)
 	}
+	if visualize do fmt.printf("\e[%dB", num_rows+2)
 	fmt.println()
 
 	return num_loops
@@ -261,7 +292,7 @@ main::proc() {
 	defer delete(contents)
 	input := string(contents)
 
-	visualize := true
+	visualize := false
 	fmt.println("Day 6")
 	fmt.println("Example 1: ", count_visited(example_1, visualize), "(expected 41)")
 	fmt.println("Input 1: ", count_visited(input))
