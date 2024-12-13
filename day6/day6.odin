@@ -292,7 +292,7 @@ main::proc() {
 	defer delete(contents)
 	input := string(contents)
 
-	visualize := false
+	visualize := true
 	fmt.println("Day 6")
 	fmt.println("Example 1: ", count_visited(example_1, visualize), "(expected 41)")
 	fmt.println("Input 1: ", count_visited(input))
