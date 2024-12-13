@@ -5,34 +5,7 @@ import "core:fmt"
 import "core:strings"
 import "core:strconv"
 
-/*
-97,75,47,61,53,29,13
-
-
-97|75
-97|13
-97|61
-97|47
-97|53
-97|29
-75|29
-75|53
-75|47
-75|61
-75|13
-47|29
-47|61
-47|13
-47|53
-61|13
-61|53
-61|29
-53|29
-53|13
-29|13
-*/
-
-example_1:=
+example_1 :=
 `47|53
 97|13
 97|61
@@ -63,32 +36,32 @@ example_1:=
 97,13,75,29,47`
 
 Empty::struct{}
-Rules:: map[int]map[int]Empty
+Rule::map[int]Empty
 
-make_rules::proc(input: string) -> Rules {
+make_rules::proc(input: string) -> []Rule {
 	rule_str := input
-	rules: Rules 
+	rules := make([dynamic]Rule, 128)
 	
 	for line in strings.split_lines_iterator(&rule_str) {
 		s1, _, s2 := strings.partition(line, "|")
 		n1 := strconv.atoi(s1)
 		n2 := strconv.atoi(s2)
 
-		if !(n1 in rules) {
+		if rules[n1] == nil {
 			rules[n1] = make(map[int]Empty)
 		}
 
-		if !(n2 in rules) {
+		if rules[n2] == nil {
 			rules[n2] = make(map[int]Empty)
 		}
 
 		rule := &rules[n2]
 		rule[n1] = Empty{}
 	}
-	return rules
+	return rules[:]
 }
 
-check_update::proc(rules: Rules, update: string, reorder_invalid := false) -> int {
+check_update::proc(rules: []Rule, update: string, reorder_invalid := false) -> int {
 	N := strings.count(update, ",") + 1
 	nums := make([]int, N)
 	defer delete(nums)
@@ -134,7 +107,7 @@ process_updates::proc(input: string, reorder_invalid := false) -> int {
 
 	rules := make_rules(rule_str)
 	defer {
-		for _, rule in rules do delete(rule)
+		for rule in rules do delete(rule)
 		delete(rules)
 	}
 
