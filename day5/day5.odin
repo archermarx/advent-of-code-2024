@@ -63,10 +63,9 @@ example_1:=
 97,13,75,29,47`
 
 Empty::struct{}
-
 Rules:: map[int]map[int]Empty
 
-parse_rules::proc(input: string) -> Rules {
+make_rules::proc(input: string) -> Rules {
 	rule_str := input
 	rules: Rules 
 	
@@ -89,72 +88,51 @@ parse_rules::proc(input: string) -> Rules {
 	return rules
 }
 
-/*
-75 -> [
-	47	
-	23
-],
-47 -> [
-	23
-],
-23 -> []
-
-i.e. 75 must come before 47 and 23
-47 must come before 23
-
-23 -> [
-	47, 
-	75
-],
-47 -> [
-	75
-],
-75 -> []
-
-i.e. 23 must come after 47 and 25
-
-*/
-
 check_update::proc(rules: Rules, update: string, reorder_invalid := false) -> int {
-	spl := strings.split(update, ",")
-	nums := make([]int, len(spl))
-	defer {
-		delete(spl)
-		delete(nums)
-	}
-	for s, index in spl {
-		nums[index] = strconv.atoi(spl[index])
+	N := strings.count(update, ",") + 1
+	nums := make([]int, N)
+	defer delete(nums)
+
+	index := 0
+	str := update
+
+	for s in strings.split_iterator(&str, ",") {
+		nums[index] = strconv.atoi(s)
+		index += 1
 	}
 
-	middle := nums[len(nums)/2]
-
-	outer: for n, index in nums {
-		if !(n in rules) {
-			// no rule for n, skip
-			continue
-		}
-		for m in nums[index+1:] {
+	sorted := false
+	step := 0
+	for ;!sorted; step += 1 {
+		sorted = true
+		for i in 0..<N-1 {
+			n := nums[i]
+			m := nums[i+1]
 			if m in rules[n] {
-				// n must be before n -- failure
-				middle = 0
-				break outer
-			}
+				sorted = false
+				nums[i] = m
+				nums[i+1] = n
+			} 
 		}
 	}
-
+	
 	if !reorder_invalid {
-		return middle
+		if step == 1 {
+			return nums[N/2]
+		}
+		return 0
+	} else {
+		if step == 1 {
+			return 0
+		}
+		return nums[N/2]
 	}
-
-
-
-	return 0
 }
 
 process_updates::proc(input: string, reorder_invalid := false) -> int {
 	rule_str, _, update_str := strings.partition(input, "\n\n")
 
-	rules := parse_rules(rule_str)
+	rules := make_rules(rule_str)
 	defer {
 		for _, rule in rules do delete(rule)
 		delete(rules)
