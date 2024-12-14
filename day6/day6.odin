@@ -2,12 +2,11 @@ package main
 
 import "core:fmt"
 import "core:os"
-import "core:strings"
 import "core:strconv"
+import "core:strings"
 import "core:time"
 
-example_1 :=
-`....#.....
+example_1 := `....#.....
 .........#
 ..........
 ..#.......
@@ -18,14 +17,15 @@ example_1 :=
 #.........
 ......#...`
 
-State::enum{
+
+State :: enum {
 	Empty,
 	Obstacle,
 	SpecialObstacle,
 	Visited,
 }
 
-Direction::enum {
+Direction :: enum {
 	None = 0,
 	Up,
 	Down,
@@ -33,37 +33,37 @@ Direction::enum {
 	Right,
 }
 
-Cell::struct {
-	state: State,
+Cell :: struct {
+	state:    State,
 	last_dir: Direction,
 }
 
-Position::[2]int
+Position :: [2]int
 
-EndState::enum {
+EndState :: enum {
 	Ok,
 	OutOfBounds,
 	Loop,
 }
 
-Guard::struct {
-	dir: Direction,
-	pos: Position,
+Guard :: struct {
+	dir:   Direction,
+	pos:   Position,
 	start: Position,
 }
 
-Grid::struct {
+Grid :: struct {
 	guard: Guard,
-	rows:[][]Cell,
+	rows:  [][]Cell,
 }
 
-grid_dims::proc(grid: Grid) -> (int, int) {
+grid_dims :: proc(grid: Grid) -> (int, int) {
 	num_rows := len(grid.rows)
 	num_cols := len(grid.rows[0])
 	return num_rows, num_cols
 }
 
-create_grid::proc(input: string) -> Grid {
+create_grid :: proc(input: string) -> Grid {
 	rows: [dynamic][]Cell
 	guard: Guard
 
@@ -71,10 +71,18 @@ create_grid::proc(input: string) -> Grid {
 	str := input
 	for line in strings.split_lines_iterator(&str) {
 		row := make([]Cell, len(line))
-		for col in 0..<len(line) {
-			switch(line[col]) {
-			case '.': row[col] = { state = .Empty, last_dir = .None }
-			case '#': row[col] = { state = .Obstacle, last_dir = .None }
+		for col in 0 ..< len(line) {
+			switch (line[col]) {
+			case '.':
+				row[col] = {
+					state    = .Empty,
+					last_dir = .None,
+				}
+			case '#':
+				row[col] = {
+					state    = .Obstacle,
+					last_dir = .None,
+				}
 			case '^':
 				guard.pos = {rownum, col}
 				guard.start = guard.pos
@@ -88,15 +96,15 @@ create_grid::proc(input: string) -> Grid {
 	return {guard, rows[:]}
 }
 
-delete_grid::proc(grid: ^Grid) {
+delete_grid :: proc(grid: ^Grid) {
 	for row in grid.rows do delete(row)
 	delete(grid.rows)
 }
 
-clear_grid::proc(grid: ^Grid) {
+clear_grid :: proc(grid: ^Grid) {
 	num_rows, num_cols := grid_dims(grid^)
-	for i in 0..<num_rows {
-		for j in 0..<num_cols {
+	for i in 0 ..< num_rows {
+		for j in 0 ..< num_cols {
 			state := grid.rows[i][j].state
 			if state == .Visited || state == .SpecialObstacle {
 				grid.rows[i][j].state = .Empty
@@ -108,12 +116,12 @@ clear_grid::proc(grid: ^Grid) {
 	grid.guard.dir = .Up
 }
 
-print_grid::proc(grid: Grid, buf: ^strings.Builder) {
+print_grid :: proc(grid: Grid, buf: ^strings.Builder) {
 	padding := 1
 
 	// Draw top border
 	fmt.sbprint(buf, '╭')
-	for _ in 1..<(padding+1)*len(grid.rows[0]) + 1 {
+	for _ in 1 ..< (padding + 1) * len(grid.rows[0]) + 1 {
 		fmt.sbprint(buf, '─')
 	}
 	fmt.sbprintln(buf, '╮')
@@ -123,29 +131,37 @@ print_grid::proc(grid: Grid, buf: ^strings.Builder) {
 		for cell, j in row {
 			c: rune
 			if i == grid.guard.pos[0] && j == grid.guard.pos[1] {
-				#partial switch(grid.guard.dir) {
-				case .Left: c = '<'
-				case .Right: c = '>'
-				case .Up: c = '^'
-				case .Down: c = 'v'
+				#partial switch (grid.guard.dir) {
+				case .Left:
+					c = '<'
+				case .Right:
+					c = '>'
+				case .Up:
+					c = '^'
+				case .Down:
+					c = 'v'
 				}
 				fmt.sbprintf(buf, "\e[1;31m%v\e[0m", c)
 			} else {
-				switch(cell.state) {
-				case .Empty: fmt.sbprint(buf, "\e[0;30m.\e[0m")
-				case .Visited: fmt.sbprint(buf, "\e[1;37mX\e[0m")
-				case .Obstacle: fmt.sbprint(buf, "\e[1;34m#\e[0m")
-				case .SpecialObstacle: fmt.sbprint(buf, "\e[1;34m0\e[0m")
+				switch (cell.state) {
+				case .Empty:
+					fmt.sbprint(buf, "\e[0;30m.\e[0m")
+				case .Visited:
+					fmt.sbprint(buf, "\e[1;37mX\e[0m")
+				case .Obstacle:
+					fmt.sbprint(buf, "\e[1;34m#\e[0m")
+				case .SpecialObstacle:
+					fmt.sbprint(buf, "\e[1;34m0\e[0m")
 				}
 			}
-			for _ in 0..<padding do fmt.sbprint(buf, ' ')
+			for _ in 0 ..< padding do fmt.sbprint(buf, ' ')
 		}
 		fmt.sbprintln(buf, '│')
 	}
 
 	// Draw bottom border
 	fmt.sbprint(buf, '╰')
-	for _ in 1..<(padding+1)*len(grid.rows[0]) + 1 {
+	for _ in 1 ..< (padding + 1) * len(grid.rows[0]) + 1 {
 		fmt.sbprint(buf, '─')
 	}
 	fmt.sbprintln(buf, '╯')
@@ -157,21 +173,24 @@ print_grid::proc(grid: Grid, buf: ^strings.Builder) {
 }
 
 
-step::proc(grid: ^Grid) -> (bool, EndState) {
+step :: proc(grid: ^Grid) -> (bool, EndState) {
 	nrows, ncols := grid_dims(grid^)
 	guard := &grid.guard
 	row, col := guard.pos[0], guard.pos[1]
 	next: Position
 	#partial switch guard.dir {
-	case .Up:    next = {row - 1, col}
-	case .Down:  next = {row + 1, col}
-	case .Left:  next = {row, col - 1}
-	case .Right: next = {row, col + 1}
+	case .Up:
+		next = {row - 1, col}
+	case .Down:
+		next = {row + 1, col}
+	case .Left:
+		next = {row, col - 1}
+	case .Right:
+		next = {row, col + 1}
 	}
 
 	// Check for out of bounds
-	if next[0] < 0 || next[0] >= nrows ||
-	   next[1] < 0 || next[1] >= ncols {
+	if next[0] < 0 || next[0] >= nrows || next[1] < 0 || next[1] >= ncols {
 		return false, .OutOfBounds
 	}
 
@@ -182,10 +201,14 @@ step::proc(grid: ^Grid) -> (bool, EndState) {
 	if state == State.Obstacle || state == State.SpecialObstacle {
 		// Check for obstacle and turn right if encountered
 		#partial switch guard.dir {
-		case .Up: 	 guard.dir = Direction.Right
-		case .Down:  guard.dir = Direction.Left
-		case .Left:  guard.dir = Direction.Up
-		case .Right: guard.dir = Direction.Down
+		case .Up:
+			guard.dir = Direction.Right
+		case .Down:
+			guard.dir = Direction.Left
+		case .Left:
+			guard.dir = Direction.Up
+		case .Right:
+			guard.dir = Direction.Down
 		}
 	} else {
 		// Move forward and increment visited
@@ -206,21 +229,25 @@ step::proc(grid: ^Grid) -> (bool, EndState) {
 	return new, status
 }
 
-predict_route::proc(
+predict_route :: proc(
 	grid: ^Grid,
 	positions: ^[dynamic]Position = nil,
 	buf: ^strings.Builder = nil,
-	visualize := false) -> (int, EndState) {
+	visualize := false,
+) -> (
+	int,
+	EndState,
+) {
 
 	nrows, ncols := grid_dims(grid^)
 	if positions != nil do clear(positions)
 	visited := 1
 	end: EndState
 
-	for count := 0;;count += 1{
+	for count := 0;; count += 1 {
 		if (visualize && buf != nil) {
 			print_grid(grid^, buf)
-			fmt.printf("\e[%vA", nrows+2)
+			fmt.printf("\e[%vA", nrows + 2)
 			time.sleep(5_000_000)
 		}
 		new: bool
@@ -231,7 +258,7 @@ predict_route::proc(
 		}
 		// detect loops with a maximum step count
 		if end != .Ok {
-			break;
+			break
 		}
 	}
 
@@ -240,22 +267,22 @@ predict_route::proc(
 	return visited, end
 }
 
-count_visited::proc(input: string, visualize := false) -> int {
+count_visited :: proc(input: string, visualize := false) -> int {
 	grid := create_grid(input)
 	defer delete_grid(&grid)
 
-	buf := strings.builder_make();
+	buf := strings.builder_make()
 	defer strings.builder_destroy(&buf)
 	visited, _ := predict_route(&grid, nil, &buf, visualize)
 
 	return visited
 }
 
-find_loops::proc(input: string, visualize := false) -> int {
+find_loops :: proc(input: string, visualize := false) -> int {
 	grid := create_grid(input)
 	defer delete_grid(&grid)
 
-	buf := strings.builder_make();
+	buf := strings.builder_make()
 	defer strings.builder_destroy(&buf)
 
 	positions: [dynamic]Position
@@ -276,18 +303,23 @@ find_loops::proc(input: string, visualize := false) -> int {
 
 		// increment loop counter if we found a loop
 		if endstate == .Loop do num_loops += 1
-		fmt.printfln("\e[1;32mChecked position %v/%v. Found %v loops.\e[0m", index+1, len(positions), num_loops)
+		fmt.printfln(
+			"\e[1;32mChecked position %v/%v. Found %v loops.\e[0m",
+			index + 1,
+			len(positions),
+			num_loops,
+		)
 		fmt.print("\e[1A")
-		if visualize do fmt.printf("\e[%dA", num_rows+2)
+		if visualize do fmt.printf("\e[%dA", num_rows + 2)
 	}
-	if visualize do fmt.printf("\e[%dB", num_rows+2)
+	if visualize do fmt.printf("\e[%dB", num_rows + 2)
 	fmt.println()
 
 	return num_loops
 }
 
-main::proc() {
-	contents, ok := os.read_entire_file_from_filename("input_day6.txt")
+main :: proc() {
+	contents, ok := os.read_entire_file_from_filename("input")
 	if !ok do panic("could not read file!")
 	defer delete(contents)
 	input := string(contents)

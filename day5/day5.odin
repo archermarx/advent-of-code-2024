@@ -1,12 +1,11 @@
 package main
 
-import "core:os"
 import "core:fmt"
-import "core:strings"
+import "core:os"
 import "core:strconv"
+import "core:strings"
 
-example_1 :=
-`47|53
+example_1 := `47|53
 97|13
 97|61
 97|47
@@ -35,13 +34,14 @@ example_1 :=
 61,13,29
 97,13,75,29,47`
 
-Empty::struct{}
-Rule::map[int]Empty
 
-make_rules::proc(input: string) -> []Rule {
+Empty :: struct {}
+Rule :: map[int]Empty
+
+make_rules :: proc(input: string) -> []Rule {
 	rule_str := input
 	rules := make([dynamic]Rule, 128)
-	
+
 	for line in strings.split_lines_iterator(&rule_str) {
 		s1, _, s2 := strings.partition(line, "|")
 		n1 := strconv.atoi(s1)
@@ -61,7 +61,7 @@ make_rules::proc(input: string) -> []Rule {
 	return rules[:]
 }
 
-check_update::proc(rules: []Rule, update: string, reorder_invalid := false) -> int {
+check_update :: proc(rules: []Rule, update: string, reorder_invalid := false) -> int {
 	N := strings.count(update, ",") + 1
 	nums := make([]int, N)
 	defer delete(nums)
@@ -76,33 +76,33 @@ check_update::proc(rules: []Rule, update: string, reorder_invalid := false) -> i
 
 	sorted := false
 	step := 0
-	for ;!sorted; step += 1 {
+	for ; !sorted; step += 1 {
 		sorted = true
-		for i in 0..<N-1 {
+		for i in 0 ..< N - 1 {
 			n := nums[i]
-			m := nums[i+1]
+			m := nums[i + 1]
 			if m in rules[n] {
 				sorted = false
 				nums[i] = m
-				nums[i+1] = n
-			} 
+				nums[i + 1] = n
+			}
 		}
 	}
-	
+
 	if !reorder_invalid {
 		if step == 1 {
-			return nums[N/2]
+			return nums[N / 2]
 		}
 		return 0
 	} else {
 		if step == 1 {
 			return 0
 		}
-		return nums[N/2]
+		return nums[N / 2]
 	}
 }
 
-process_updates::proc(input: string, reorder_invalid := false) -> int {
+process_updates :: proc(input: string, reorder_invalid := false) -> int {
 	rule_str, _, update_str := strings.partition(input, "\n\n")
 
 	rules := make_rules(rule_str)
@@ -122,14 +122,18 @@ process_updates::proc(input: string, reorder_invalid := false) -> int {
 	return sum
 }
 
-main::proc() {
-	contents, ok := os.read_entire_file_from_filename("input_day5.txt")
+main :: proc() {
+	contents, ok := os.read_entire_file_from_filename("input")
 	if !ok do panic("could not read file!")
 	defer delete(contents)
 	input := string(contents)
 
 	fmt.println("Example 1: ", process_updates(example_1), " (expected 143)")
 	fmt.println("Input 1: ", process_updates(input))
-	fmt.println("Example 2: ", process_updates(example_1, reorder_invalid=true), " (expected 123)")
-	fmt.println("Input 2: ", process_updates(input, reorder_invalid=true))
+	fmt.println(
+		"Example 2: ",
+		process_updates(example_1, reorder_invalid = true),
+		" (expected 123)",
+	)
+	fmt.println("Input 2: ", process_updates(input, reorder_invalid = true))
 }

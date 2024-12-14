@@ -68,7 +68,7 @@ analyze_equations :: proc(input: string, allow_concat := false) -> int {
 main :: proc() {
 	defer free_all(context.temp_allocator)
 
-	contents, ok := os.read_entire_file_from_filename("input_day7.txt", context.temp_allocator)
+	contents, ok := os.read_entire_file_from_filename("input", context.temp_allocator)
 	if !ok do panic("could not read file!")
 	input := string(contents)
 

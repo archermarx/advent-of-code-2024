@@ -78,7 +78,7 @@ count_antinodes :: proc(input: string, count_all: bool = false) -> int {
 
 main :: proc() {
 	defer free_all(context.temp_allocator)
-	contents, ok := os.read_entire_file_from_filename("input_day8.txt", context.temp_allocator)
+	contents, ok := os.read_entire_file_from_filename("input", context.temp_allocator)
 	if !ok do panic("could not read file!")
 	input := string(contents)
 

@@ -2,32 +2,32 @@ package main
 
 import "core:fmt"
 import "core:os"
-import "core:strings"
 import "core:strconv"
+import "core:strings"
 
-example::
-`7 6 4 2 1
+example :: `7 6 4 2 1
 1 2 7 8 9
 9 7 6 2 1
 1 3 2 4 5
 8 6 4 4 1
 1 3 6 7 9`
 
-level_ok::proc(prev: int, cur: int, increasing: bool) -> bool {
-	if  (cur == prev) ||
-		(increasing && cur <= prev) ||
-		(!increasing && cur >= prev) ||
-		abs(cur - prev) > 3 {
+
+level_ok :: proc(prev: int, cur: int, increasing: bool) -> bool {
+	if (cur == prev) ||
+	   (increasing && cur <= prev) ||
+	   (!increasing && cur >= prev) ||
+	   abs(cur - prev) > 3 {
 		return false
 	}
 	return true
 }
 
-classify_report::proc(levels: []string, remove := -1) -> bool {
+classify_report :: proc(levels: []string, remove := -1) -> bool {
 	firstindex := 1 if remove == 0 else 0
 	secondindex := firstindex + 2 if remove == 1 else firstindex + 1
 
-	first  := strconv.atoi(levels[firstindex])
+	first := strconv.atoi(levels[firstindex])
 	second := strconv.atoi(levels[secondindex])
 	increasing := second > first
 
@@ -46,7 +46,7 @@ classify_report::proc(levels: []string, remove := -1) -> bool {
 	return true
 }
 
-count_safe_reports::proc(contents: string, dampen:= false) -> int {
+count_safe_reports :: proc(contents: string, dampen := false) -> int {
 	context.allocator = context.temp_allocator
 
 	lines := strings.split(contents, "\n")
@@ -64,7 +64,7 @@ count_safe_reports::proc(contents: string, dampen:= false) -> int {
 			safe_reports += 1
 		} else if dampen {
 			dampen: for _, index in fields {
-				if classify_report(fields, remove=index) {
+				if classify_report(fields, remove = index) {
 					safe_reports += 1
 					break dampen
 				}
@@ -74,8 +74,8 @@ count_safe_reports::proc(contents: string, dampen:= false) -> int {
 	return safe_reports
 }
 
-main::proc() {
-	contents, ok := os.read_entire_file_from_filename("input_day2.txt")
+main :: proc() {
+	contents, ok := os.read_entire_file_from_filename("input")
 	input := string(contents)
 	defer delete(input)
 
@@ -86,6 +86,6 @@ main::proc() {
 
 	fmt.println("Example 1: ", count_safe_reports(example), ", expected 2")
 	fmt.println("Input 1: ", count_safe_reports(input))
-	fmt.println("Example 2: ", count_safe_reports(example, dampen=true), ", expected 4")
-	fmt.println("Input 2: ", count_safe_reports(input, dampen=true))
+	fmt.println("Example 2: ", count_safe_reports(example, dampen = true), ", expected 4")
+	fmt.println("Input 2: ", count_safe_reports(input, dampen = true))
 }
