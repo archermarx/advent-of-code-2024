@@ -1,3 +1,4 @@
 input
 *.dSYM
 day*/day*
+!day*/day*.*
