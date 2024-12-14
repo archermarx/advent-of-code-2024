@@ -2,9 +2,12 @@ package main
 
 import "core:fmt"
 import "core:math"
+import "core:mem"
 import "core:os"
 import "core:strconv"
 import "core:strings"
+
+import "../lib"
 
 example := `190: 10 19
 3267: 81 40 27
@@ -16,25 +19,6 @@ example := `190: 10 19
 21037: 9 7 18 13
 292: 11 6 16 20`
 
-
-powi :: proc(a: int, b: int) -> int {
-	switch b {
-	case 0:
-		return 1
-	case 1:
-		return a
-	case 2:
-		return a * a
-	case 3:
-		return a * a * a
-	case 4:
-		return a * a * a * a
-	case:
-		{
-			return powi(a * a, b - 2)
-		}
-	}
-}
 
 num_digits :: proc(num: int) -> int {
 	return int(math.log10(f64(num))) + 1
@@ -58,7 +42,7 @@ equation_works :: proc(test_val: int, nums: []string, allow_concat := false) -> 
 	if remainder == 0 && equation_works(quotient, head, allow_concat) do return true
 
 	if allow_concat && endswith(test_val, tail) {
-		left := test_val / powi(10, num_digits(tail))
+		left := test_val / lib.powi(10, num_digits(tail))
 		if equation_works(left, head, allow_concat) do return true
 	}
 
@@ -84,7 +68,7 @@ analyze_equations :: proc(input: string, allow_concat := false) -> int {
 main :: proc() {
 	defer free_all(context.temp_allocator)
 
-	contents, ok := os.read_entire_file_from_filename("input_day7.txt")
+	contents, ok := os.read_entire_file_from_filename("input_day7.txt", context.temp_allocator)
 	if !ok do panic("could not read file!")
 	input := string(contents)
 
