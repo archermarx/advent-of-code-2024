@@ -4,6 +4,7 @@ import "core:fmt"
 import "core:os"
 import "core:strconv"
 import "core:strings"
+import "core:time"
 /*
 0123
 1234
@@ -78,7 +79,6 @@ bfs :: proc(pos: Vec2, grid: [][]int, visited: [][]int) -> int {
 	num_rows, num_cols := len(grid), len(grid[0])
 
 	queue := make([dynamic]Vec2, context.temp_allocator)
-	visited[row][col] = 1
 	append(&queue, pos)
 
 	score := 0
@@ -91,13 +91,11 @@ bfs :: proc(pos: Vec2, grid: [][]int, visited: [][]int) -> int {
 		}
 	}
 
+	visited[row][col] = 1
+
 	for index < len(queue) {
 		node := queue[index]
 		val := grid[node.x][node.y]
-
-		if val == 9 {
-			score += 1
-		}
 
 		for dir in directions {
 			nextpos := node + dir
@@ -107,9 +105,13 @@ bfs :: proc(pos: Vec2, grid: [][]int, visited: [][]int) -> int {
 
 			next := grid[nextpos.x][nextpos.y]
 
-			if !(visited[nextpos.x][nextpos.y] == 0) && next == val + 1 {
-				append(&queue, nextpos)
+			if next == val + 1 && !(visited[nextpos.x][nextpos.y] == 1) {
 				visited[nextpos.x][nextpos.y] = 1
+				if next == 9 {
+					score += 1
+				} else {
+					append(&queue, nextpos)
+				}
 			}
 		}
 		index += 1
@@ -120,9 +122,9 @@ bfs :: proc(pos: Vec2, grid: [][]int, visited: [][]int) -> int {
 
 dfs :: proc(pos: Vec2, grid: [][]int, ratings: [][]int) -> int {
 	row, col := pos.x, pos.y
+
 	num_rows, num_cols := len(grid), len(grid[0])
 	val := grid[row][col]
-
 	rating := 0
 	for dir in directions {
 		nextpos := pos + dir
@@ -131,9 +133,14 @@ dfs :: proc(pos: Vec2, grid: [][]int, ratings: [][]int) -> int {
 		}
 		nextval := grid[nextpos.x][nextpos.y]
 
-		if val == 8 && nextval == 9 {
+		if nextval != val + 1 do continue
+
+		nextrating := ratings[nextpos.x][nextpos.y]
+		if nextrating >= 0 {
+			rating += nextrating
+		} else if nextval == 9 {
 			rating += 1
-		} else if nextval == val + 1 {
+		} else {
 			rating += dfs(nextpos, grid, ratings)
 		}
 	}
@@ -149,6 +156,7 @@ evaluate_trailheads :: proc(
 	allocator := context.allocator,
 ) -> int {
 	_input := input
+
 	grid := make([dynamic][]int, allocator)
 	visited := make([dynamic][]int, allocator)
 	trailheads := make([dynamic]Vec2, allocator)
@@ -161,6 +169,7 @@ evaluate_trailheads :: proc(
 			if row[col] == 0 {
 				append(&trailheads, Vec2{len(grid), col})
 			}
+			visited_row[col] = -1
 		}
 		append(&grid, row)
 		append(&visited, visited_row)
@@ -184,15 +193,16 @@ evaluate_trailheads :: proc(
 
 
 main :: proc() {
+
 	defer free_all(context.temp_allocator)
 	contents, ok := os.read_entire_file("input", context.temp_allocator)
 	if !ok do panic("could not read file!")
 
-	//fmt.println("Example 1-1: ", evaluate_trailheads(example01, .BreadthFirst), " (expected 1)")
-	//fmt.println("Example 1-2: ", evaluate_trailheads(example02, .BreadthFirst), " (expected 36)")
-	//fmt.println("Input 1: ", evaluate_trailheads(string(contents), .BreadthFirst))
-	//fmt.println("Example 2-2: ", evaluate_trailheads(example01, .DepthFirst), " (expected 16)")
-	//fmt.println("Example 2-2: ", evaluate_trailheads(example02, .DepthFirst), " (expected 81)")
+	fmt.println("Example 1-1: ", evaluate_trailheads(example01, .BreadthFirst), " (expected 1)")
+	fmt.println("Example 1-2: ", evaluate_trailheads(example02, .BreadthFirst), " (expected 36)")
+	fmt.println("Input 1: ", evaluate_trailheads(string(contents), .BreadthFirst))
 
-	fmt.println("Input 2: ", evaluate_trailheads(string(contents), .DepthFirst))
+	fmt.println("Example 2-2: ", evaluate_trailheads(example01, .DepthFirst), " (expected 16)")
+	fmt.println("Example 2-2: ", evaluate_trailheads(example02, .DepthFirst), " (expected 81)")
+	fmt.println("Input 1: ", evaluate_trailheads(string(contents), .DepthFirst))
 }
