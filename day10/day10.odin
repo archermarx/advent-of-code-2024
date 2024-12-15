@@ -66,13 +66,13 @@ Left :: Vec2{0, -1}
 Down :: Vec2{1, 0}
 Right :: Vec2{0, 1}
 Up :: Vec2{-1, 0}
+directions :: [4]Vec2{Left, Down, Right, Up}
 
 SearchMethod :: enum {
 	DepthFirst,
 	BreadthFirst,
 }
 
-directions :: [4]Vec2{Left, Down, Right, Up}
 
 bfs :: proc(pos: Vec2, grid: [][]int, visited: [][]int) -> int {
 	row, col := pos.x, pos.y
