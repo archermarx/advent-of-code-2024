@@ -1,26 +1,36 @@
 package libs
 
 import "core:fmt"
+import "core:math"
 import "core:mem"
 
-powi :: proc(a: int, b: int) -> int {
-	switch b {
+powi :: proc(x: $T1, n: $T2) -> int {
+	_x := int(x)
+	switch n {
 	case 0:
 		return 1
 	case 1:
-		return a
+		return _x
 	case 2:
-		return a * a
+		return _x * _x
 	case 3:
-		return a * a * a
+		return _x * _x * _x
 	case 4:
-		return a * a * a * a
+		return _x * _x * _x * _x
 	case:
-		{
-			return powi(a * a, b - 2)
+		q, r := math.divmod(n, 2)
+		if r == 0 {
+			return powi(_x * _x, q)
+		} else {
+			return _x * powi(_x * _x, q)
 		}
 	}
 }
+
+digits :: proc(num: $T) -> int {
+	return int(math.log10(f64(num))) + 1
+}
+
 
 new_tracking_allocator :: proc() -> ^mem.Tracking_Allocator {
 	track: ^mem.Tracking_Allocator = new(mem.Tracking_Allocator)

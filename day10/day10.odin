@@ -198,11 +198,17 @@ main :: proc() {
 	contents, ok := os.read_entire_file("input", context.temp_allocator)
 	if !ok do panic("could not read file!")
 
-	fmt.println("Example 1-1: ", evaluate_trailheads(example01, .BreadthFirst), " (expected 1)")
-	fmt.println("Example 1-2: ", evaluate_trailheads(example02, .BreadthFirst), " (expected 36)")
-	fmt.println("Input 1: ", evaluate_trailheads(string(contents), .BreadthFirst))
+	a := context.temp_allocator
 
-	fmt.println("Example 2-2: ", evaluate_trailheads(example01, .DepthFirst), " (expected 16)")
-	fmt.println("Example 2-2: ", evaluate_trailheads(example02, .DepthFirst), " (expected 81)")
-	fmt.println("Input 1: ", evaluate_trailheads(string(contents), .DepthFirst))
+	fmt.println("Example 1-1: ", evaluate_trailheads(example01, .BreadthFirst, a), " (expected 1)")
+	fmt.println(
+		"Example 1-2: ",
+		evaluate_trailheads(example02, .BreadthFirst, a),
+		" (expected 36)",
+	)
+	fmt.println("Input 1: ", evaluate_trailheads(string(contents), .BreadthFirst, a))
+
+	fmt.println("Example 2-2: ", evaluate_trailheads(example01, .DepthFirst, a), " (expected 16)")
+	fmt.println("Example 2-2: ", evaluate_trailheads(example02, .DepthFirst, a), " (expected 81)")
+	fmt.println("Input 1: ", evaluate_trailheads(string(contents), .DepthFirst, a))
 }
