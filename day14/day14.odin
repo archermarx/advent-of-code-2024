@@ -95,43 +95,22 @@ predict :: proc(
 		metadata = &info,
 	}
 
-	// Advance robots in time and update grid
-	for step in 0 ..< num_steps {
-		// clear grid
-		for row, y in grid {
-			for &val, x in row {
-				val = 0
-				buf.buf[y * width + x] = 1
-			}
-		}
+	// move robots forward
+	for &robot in robots[:] {
+		robot.pos += num_steps * robot.vel
+		robot.pos.x = robot.pos.x %% width
+		robot.pos.y = robot.pos.y %% height
+		grid[robot.pos.y][robot.pos.x] += 1
+		buf.buf[robot.pos.y * width + robot.pos.x] = 1
+	}
 
-		// move robots forward
-		for &robot in robots[:] {
-			robot.pos += robot.vel
-			if robot.pos.x >= width {
-				robot.pos.x -= width
-			}
-			if robot.pos.y >= height {
-				robot.pos.y -= height
-			}
-			if robot.pos.x < 0 {
-				robot.pos.x += width
-			}
-			if robot.pos.y < 0 {
-				robot.pos.y += height
-			}
-			grid[robot.pos.y][robot.pos.x] += 1
-			buf.buf[robot.pos.y * width + robot.pos.x] = 0
-		}
-
-		// write image to file so we can look for a christmas tree
-		if step == 7092 {
-			fmt.bprintf(filename, "outputs/output%05d.pbm", step)
-			fmt.println(string(filename))
-			err := netpbm.save_to_file(string(filename), &img)
-			if err != nil {
-				fmt.println(err)
-			}
+	// write image to file so we can look for a christmas tree
+	if num_steps == 7092 {
+		fmt.bprintf(filename, "outputs/output%05d.pbm", num_steps)
+		fmt.println(string(filename))
+		err := netpbm.save_to_file(string(filename), &img)
+		if err != nil {
+			fmt.println(err)
 		}
 	}
 
@@ -179,6 +158,6 @@ main :: proc() {
 	)
 
 	fmt.printfln("Input 1: %v", predict(input, input_width, input_height, steps))
-	fmt.printfln("Input 1: %v", predict(input, input_width, input_height, 20_000))
+	fmt.printfln("Input 2: %v", predict(input, input_width, input_height, 7093))
 
 }
