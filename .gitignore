@@ -2,3 +2,4 @@ input
 *.dSYM
 day*/day*
 !day*/day*.*
+.DS_Store
