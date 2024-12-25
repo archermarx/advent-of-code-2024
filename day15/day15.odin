@@ -43,34 +43,33 @@ v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^`
 
 Vec2 :: distinct [2]int
 
-Tile :: enum {
-	Floor,
-	Box,
-	Wall,
-	Robot,
-}
-
-Dir :: enum {
-	Left = 0,
-	Up,
-	Right,
-	Down,
-}
-
-Directions :: [4]Vec2 {
-	Dir.Left  = Vec2{-1, 0},
-	Dir.Right = Vec2{1, 0},
-	Dir.Up    = Vec2{0, -1},
-	Dir.Down  = Vec2{0, 1},
+Directions :: [256]Vec2 {
+	'<' = Vec2{-1, 0},
+	'>' = Vec2{1, 0},
+	'^' = Vec2{0, -1},
+	'v' = Vec2{0, 1},
 }
 
 BRED :: "\x1b[1;31m"
 BLK :: "\x1b[0;30m"
 BBLU :: "\x1b[1;34m"
-BMAG :: "\x1b[1;36m"
+BGRN :: "\x1b[1;36m"
 COFF :: "\x1b[0m"
 
-print_tiles :: proc(tiles: [][]Tile, robot_pos: Vec2) {
+tile_color :: proc(tile: u8) -> string {
+	switch (tile) {
+	case '@':
+		return BRED
+	case 'O', '[', ']':
+		return BBLU
+	case '#':
+		return BGRN
+	case:
+		return BLK
+	}
+}
+
+print_tiles :: proc(tiles: [][]u8, robot_pos: Vec2) {
 	buf: strings.Builder
 	defer strings.builder_destroy(&buf)
 	width := len(tiles[0])
@@ -89,16 +88,7 @@ print_tiles :: proc(tiles: [][]Tile, robot_pos: Vec2) {
 		fmt.sbprint(&buf, '│')
 		for tile, x in row {
 			pad := padding if x < width - 1 else ""
-			switch tile {
-			case .Floor:
-				fmt.sbprintf(&buf, "%s.%s%s", BLK, pad, COFF)
-			case .Wall:
-				fmt.sbprintf(&buf, "%s#%s%s", BMAG, pad, COFF)
-			case .Box:
-				fmt.sbprintf(&buf, "%sO%s%s", BBLU, pad, COFF)
-			case .Robot:
-				fmt.sbprintf(&buf, "%s@%s%s", BRED, pad, COFF)
-			}
+			fmt.sbprintf(&buf, "%s%c%s%s", tile_color(tile), tile, pad, COFF)
 		}
 		fmt.sbprintln(&buf, '│')
 	}
@@ -114,7 +104,7 @@ in_bounds :: proc(pos: Vec2, width: int, height: int) -> bool {
 	return false
 }
 
-move_if_possible :: proc(tiles: [][]Tile, pos: Vec2, dir: Dir) -> (move: bool, next: Vec2) {
+move_if_possible :: proc(tiles: [][]u8, pos: Vec2, dir: u8) -> (move: bool, next: Vec2) {
 	width, height := len(tiles[0]), len(tiles)
 	dirs := Directions
 
@@ -126,18 +116,16 @@ move_if_possible :: proc(tiles: [][]Tile, pos: Vec2, dir: Dir) -> (move: bool, n
 	tile := tiles[next.y][next.x]
 
 	switch (tile) {
-	case .Wall, .Robot:
+	case '#':
 		break
-	case .Floor:
+	case '.':
 		move = true
-	case .Box:
+	case 'O':
 		move, _ = move_if_possible(tiles, next, dir)
 	}
 
 	if move {
-		// Set grid
-		tiles[next.y][next.x] = tiles[pos.y][pos.x]
-		tiles[pos.y][pos.x] = .Floor
+		tiles[next.y][next.x], tiles[pos.y][pos.x] = tiles[pos.y][pos.x], '.'
 	}
 
 	return move, (next if move else pos)
@@ -146,8 +134,8 @@ move_if_possible :: proc(tiles: [][]Tile, pos: Vec2, dir: Dir) -> (move: bool, n
 predict_moves :: proc(input: string, visualize := false, allocator := context.allocator) -> int {
 	_input := input
 
-	tiles := make([dynamic][]Tile, allocator)
-	commands := make([dynamic]Dir, allocator)
+	tiles := make([dynamic][]u8, allocator)
+	commands := make([dynamic]u8, allocator)
 	defer {
 		for row in tiles do delete(row)
 		delete(tiles)
@@ -159,54 +147,27 @@ predict_moves :: proc(input: string, visualize := false, allocator := context.al
 	y := 0
 	for line in strings.split_lines_iterator(&_input) {
 		if read_commands {
-			for c in transmute([]u8)line {
-				cmd: Dir
-				switch c {
-				case '<':
-					cmd = .Left
-				case '^':
-					cmd = .Up
-				case '>':
-					cmd = .Right
-				case 'v':
-					cmd = .Down
-				}
+			for cmd in transmute([]u8)line {
 				append(&commands, cmd)
 			}
 			continue
 		}
+
 		if len(line) == 0 {
 			read_commands = true
 			continue
 		}
 
-		all_wall := true
-		row := make([]Tile, len(line) - 2, allocator)
+		row := make([]u8, len(line), allocator)
 
-		for c, x in transmute([]u8)line[1:len(line) - 1] {
-			if c != '#' {
-				all_wall = false
-			}
-			switch c {
-			case '@':
-				{
-					robot_pos = Vec2{x, y - 1}
-					row[x] = .Robot
-				}
-			case '#':
-				row[x] = .Wall
-			case '.':
-				row[x] = .Floor
-			case 'O':
-				row[x] = .Box
+		for c, x in transmute([]u8)line {
+			row[x] = c
+			if c == '@' {
+				robot_pos = Vec2{x, y}
 			}
 		}
-		if all_wall {
-			delete(row)
-		} else {
-			append(&tiles, row)
-		}
 
+		append(&tiles, row)
 		y += 1
 	}
 
@@ -215,7 +176,7 @@ predict_moves :: proc(input: string, visualize := false, allocator := context.al
 	for cmd in commands {
 		_, robot_pos = move_if_possible(tiles[:], robot_pos, cmd)
 		if visualize {
-			fmt.printfln("Command: %v", cmd)
+			fmt.printfln("Command: %c", cmd)
 			print_tiles(tiles[:], robot_pos)
 		}
 	}
@@ -225,8 +186,8 @@ predict_moves :: proc(input: string, visualize := false, allocator := context.al
 	width, height := len(tiles[0]), len(tiles)
 	for row, j in tiles {
 		for tile, i in row {
-			if tile == .Box {
-				sum_coords += (i + 1) + 100 * (j + 1)
+			if tile == 'O' {
+				sum_coords += i + 100 * j
 			}
 		}
 	}
