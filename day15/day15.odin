@@ -47,6 +47,7 @@ Tile :: enum {
 	Floor,
 	Box,
 	Wall,
+	Robot,
 }
 
 Dir :: enum {
@@ -88,10 +89,6 @@ print_tiles :: proc(tiles: [][]Tile, robot_pos: Vec2) {
 		fmt.sbprint(&buf, '│')
 		for tile, x in row {
 			pad := padding if x < width - 1 else ""
-			if robot_pos.x == x && robot_pos.y == y {
-				fmt.sbprintf(&buf, "%s@%s%s", BRED, pad, COFF)
-				continue
-			}
 			switch tile {
 			case .Floor:
 				fmt.sbprintf(&buf, "%s.%s%s", BLK, pad, COFF)
@@ -99,6 +96,8 @@ print_tiles :: proc(tiles: [][]Tile, robot_pos: Vec2) {
 				fmt.sbprintf(&buf, "%s#%s%s", BMAG, pad, COFF)
 			case .Box:
 				fmt.sbprintf(&buf, "%sO%s%s", BBLU, pad, COFF)
+			case .Robot:
+				fmt.sbprintf(&buf, "%s@%s%s", BRED, pad, COFF)
 			}
 		}
 		fmt.sbprintln(&buf, '│')
@@ -115,44 +114,33 @@ in_bounds :: proc(pos: Vec2, width: int, height: int) -> bool {
 	return false
 }
 
-move :: proc(tiles: [][]Tile, robot_pos: ^Vec2, dir: Dir) {
+move_if_possible :: proc(tiles: [][]Tile, pos: Vec2, dir: Dir) -> (move: bool, next: Vec2) {
 	width, height := len(tiles[0]), len(tiles)
 	dirs := Directions
 
-	next := robot_pos^ + dirs[dir]
+	next = pos + dirs[dir]
 
-	if !in_bounds(next, width, height) do return
+	if !in_bounds(next, width, height) do return false, pos
 
+	// Next position is in-bounds
 	tile := tiles[next.y][next.x]
 
-	switch tile {
-	case .Wall:
+	switch (tile) {
+	case .Wall, .Robot:
 		break
 	case .Floor:
-		robot_pos^ = next
+		move = true
 	case .Box:
-		// Find the first tile that isn't a box
-		num_boxes := 0
-		for tile == .Box && in_bounds(next + dirs[dir], width, height) {
-			next += dirs[dir]
-			tile = tiles[next.y][next.x]
-			num_boxes += 1
-		}
-
-		// If the tile is a wall or a box, we can't push the boxes and thus the robot can't move
-		if tile == .Wall || tile == .Box do break
-
-		// If tile is a floor, we push all boxes up to this point
-		for i in 0 ..< num_boxes {
-			tiles[next.y][next.x] = .Box
-			next -= dirs[dir]
-		}
-
-		tiles[next.y][next.x] = .Floor
-		robot_pos^ = next
-
-		break
+		move, _ = move_if_possible(tiles, next, dir)
 	}
+
+	if move {
+		// Set grid
+		tiles[next.y][next.x] = tiles[pos.y][pos.x]
+		tiles[pos.y][pos.x] = .Floor
+	}
+
+	return move, (next if move else pos)
 }
 
 predict_moves :: proc(input: string, visualize := false, allocator := context.allocator) -> int {
@@ -203,7 +191,7 @@ predict_moves :: proc(input: string, visualize := false, allocator := context.al
 			case '@':
 				{
 					robot_pos = Vec2{x, y - 1}
-					row[x] = .Floor
+					row[x] = .Robot
 				}
 			case '#':
 				row[x] = .Wall
@@ -225,7 +213,7 @@ predict_moves :: proc(input: string, visualize := false, allocator := context.al
 	if visualize do print_tiles(tiles[:], robot_pos)
 
 	for cmd in commands {
-		move(tiles[:], &robot_pos, cmd)
+		_, robot_pos = move_if_possible(tiles[:], robot_pos, cmd)
 		if visualize {
 			fmt.printfln("Command: %v", cmd)
 			print_tiles(tiles[:], robot_pos)
