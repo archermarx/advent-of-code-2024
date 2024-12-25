@@ -41,6 +41,17 @@ vvv<<^>^v^^><<>>><>^<<><^vv^^<>vvv<>><^^v>^>vv<>v<<<<v<^v>^<^^>>>^<v<v
 v^^>>><<^^<>>^v^<v^vv<>v^<<>^<^v^v><^<<<><<^<v><v<>vv>>v><v^<vv<>v^<<^`
 
 
+example03 := `#######
+#...#.#
+#.....#
+#..OO@#
+#..O..#
+#.....#
+#######
+
+<vv<<^^<<^^`
+
+
 Vec2 :: distinct [2]int
 
 Directions :: [256]Vec2 {
@@ -69,11 +80,11 @@ tile_color :: proc(tile: u8) -> string {
 	}
 }
 
-print_tiles :: proc(tiles: [][]u8, robot_pos: Vec2) {
+print_tiles :: proc(tiles: [][]u8, double_width: bool) {
 	buf: strings.Builder
 	defer strings.builder_destroy(&buf)
 	width := len(tiles[0])
-	padding := " "
+	padding := "" if double_width else " "
 
 	print_header :: proc(buf: ^strings.Builder, width: int, left: rune, right: rune, pad: int) {
 		fmt.sbprint(buf, left)
@@ -131,7 +142,12 @@ move_if_possible :: proc(tiles: [][]u8, pos: Vec2, dir: u8) -> (move: bool, next
 	return move, (next if move else pos)
 }
 
-predict_moves :: proc(input: string, visualize := false, allocator := context.allocator) -> int {
+predict_moves :: proc(
+	input: string,
+	double_width := false,
+	visualize := false,
+	allocator := context.allocator,
+) -> int {
 	_input := input
 
 	tiles := make([dynamic][]u8, allocator)
@@ -158,26 +174,38 @@ predict_moves :: proc(input: string, visualize := false, allocator := context.al
 			continue
 		}
 
-		row := make([]u8, len(line), allocator)
+
+		row := make([dynamic]u8, allocator)
 
 		for c, x in transmute([]u8)line {
-			row[x] = c
-			if c == '@' {
+			switch c {
+			case '@':
 				robot_pos = Vec2{x, y}
+				append(&row, '@')
+				if double_width do append(&row, '.')
+			case 'O':
+				if double_width {
+					append(&row, "[]")
+				} else {
+					append(&row, c)
+				}
+			case:
+				append(&row, c)
+				if double_width do append(&row, c)
 			}
 		}
 
-		append(&tiles, row)
+		append(&tiles, row[:])
 		y += 1
 	}
 
-	if visualize do print_tiles(tiles[:], robot_pos)
+	if visualize do print_tiles(tiles[:], double_width)
 
 	for cmd in commands {
 		_, robot_pos = move_if_possible(tiles[:], robot_pos, cmd)
 		if visualize {
 			fmt.printfln("Command: %c", cmd)
-			print_tiles(tiles[:], robot_pos)
+			print_tiles(tiles[:], double_width)
 		}
 	}
 
@@ -202,7 +230,13 @@ main :: proc() {
 	input := string(contents)
 
 	fmt.println("Day 15!")
-	fmt.printfln("Example 1-1: %v (expected %v)", predict_moves(example01, visualize = true), 2028)
+	fmt.printfln("Example 1-1: %v (expected %v)", predict_moves(example01), 2028)
 	fmt.printfln("Example 1-2: %v (expected %v)", predict_moves(example02), 10092)
 	fmt.printfln("Input 1: %v", predict_moves(input))
+	fmt.printfln(
+		"Example 2-0: %v (expected %v)",
+		predict_moves(example03, true, visualize = true),
+		2028,
+	)
+	//fmt.printfln("Example 2-1: %v (expected %v)", predict_moves(example02, true), 9021)
 }
