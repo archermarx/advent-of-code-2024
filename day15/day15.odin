@@ -52,6 +52,41 @@ example03 := `#######
 <vv<<^^<<^^`
 
 
+example04 := `#########
+#.......#
+#...O...#
+#...OO@.#
+#...O...#
+#.......#
+#.......#
+#########
+
+<^^<<<v`
+
+
+example05 := `#####
+#O..#
+#..@#
+#####
+
+<
+`
+
+
+example06 := `######
+#....#
+#..#.#
+#....#
+#.O..#
+#.OO@#
+#.O..#
+#....#
+######
+
+<vv<<^^^
+`
+
+
 Vec2 :: distinct [2]int
 
 Directions :: [256]Vec2 {
@@ -115,24 +150,43 @@ in_bounds :: proc(pos: Vec2, width: int, height: int) -> bool {
 	return false
 }
 
-move_if_possible :: proc(tiles: [][]u8, pos: Vec2, dir: u8) -> (move: bool, next: Vec2) {
+move_if_possible :: proc(
+	tiles: [][]u8,
+	pos: Vec2,
+	dir: u8,
+	checkbox := true,
+) -> (
+	move: bool,
+	next: Vec2,
+) {
 	width, height := len(tiles[0]), len(tiles)
 	dirs := Directions
 
 	next = pos + dirs[dir]
 
-	if !in_bounds(next, width, height) do return false, pos
-
 	// Next position is in-bounds
 	tile := tiles[next.y][next.x]
+	cur := tiles[pos.y][pos.x]
+	vert := dir == '^' || dir == 'v'
 
 	switch (tile) {
 	case '#':
 		break
 	case '.':
 		move = true
-	case 'O':
+	case 'O', '[', ']':
 		move, _ = move_if_possible(tiles, next, dir)
+	}
+
+	if move && checkbox && vert && (cur == '[' || cur == ']') {
+		if cur == '[' {
+			move, _ = move_if_possible(tiles, Vec2{pos.x + 1, pos.y}, dir, false)
+		} else {
+			move, _ = move_if_possible(tiles, Vec2{pos.x - 1, pos.y}, dir, false)
+		}
+
+		// box couldn't move, need to undo prev move
+
 	}
 
 	if move {
@@ -180,7 +234,7 @@ predict_moves :: proc(
 		for c, x in transmute([]u8)line {
 			switch c {
 			case '@':
-				robot_pos = Vec2{x, y}
+				robot_pos = Vec2{2 * x, y}
 				append(&row, '@')
 				if double_width do append(&row, '.')
 			case 'O':
@@ -214,7 +268,7 @@ predict_moves :: proc(
 	width, height := len(tiles[0]), len(tiles)
 	for row, j in tiles {
 		for tile, i in row {
-			if tile == 'O' {
+			if tile == 'O' || tile == '[' {
 				sum_coords += i + 100 * j
 			}
 		}
@@ -229,14 +283,18 @@ main :: proc() {
 	if !ok do panic("could not read file!")
 	input := string(contents)
 
-	fmt.println("Day 15!")
-	fmt.printfln("Example 1-1: %v (expected %v)", predict_moves(example01), 2028)
-	fmt.printfln("Example 1-2: %v (expected %v)", predict_moves(example02), 10092)
-	fmt.printfln("Input 1: %v", predict_moves(input))
-	fmt.printfln(
-		"Example 2-0: %v (expected %v)",
-		predict_moves(example03, true, visualize = true),
-		2028,
-	)
+	//fmt.println("Day 15!")
+	//fmt.printfln("Example 1-1: %v (expected %v)", predict_moves(example01), 2028)
+	//fmt.printfln("Example 1-2: %v (expected %v)", predict_moves(example02), 10092)
+	//fmt.printfln("Input 1: %v", predict_moves(input))
+	//fmt.printfln("Example 2-0: %v", predict_moves(example03, true, visualize = true))
 	//fmt.printfln("Example 2-1: %v (expected %v)", predict_moves(example02, true), 9021)
+	//fmt.printfln("Example 2-2: %v", predict_moves(example04, true, visualize = true))
+	//fmt.printfln("Example 2-3: %v", predict_moves(example05, true, visualize = true))
+	fmt.printfln(
+		"Example 2-4: %v (expected %v)",
+		predict_moves(example06, true, visualize = true),
+		1216,
+	)
+	//fmt.printfln("Input 2: %v", predict_moves(input, true))
 }
